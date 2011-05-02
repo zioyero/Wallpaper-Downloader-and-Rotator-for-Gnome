@@ -20,21 +20,21 @@ from lxml import etree as ET
 
 # expand the list with REDDIT IDs if you want
 REDDITS = { 0 : 'EarthPorn',  1 : 'CityPorn', 2 : 'SpacePorn', 
-            3 : 'AnimalPorn', 4 : 'BotanicalPorn' }
+            3 : 'AnimalPorn', 4 : 'BotanicalPorn', 5: 'AlternativeArt' }
 
 ##############################################################################
 ## change these variables
 ##############################################################################
 # where to save the images:
-PHOTO_DIR = '/trash/gnome-wallpapers/'
+PHOTO_DIR = '/home/adrian/Pictures/backgrounds/'
 # 15 minutes:
-DURATION = '895.0'
+DURATION = '600'#'895.0'
 # transition time between two images:
-TRANSITION = '5.0'
+TRANSITION = '2.5'
 # EarthPorn, by default:
-REDDIT = 0
+REDDIT = 5
 # image size should have at least that many pixels:
-SIZE_THRESHOLD = (800, 600)
+SIZE_THRESHOLD = (900, 600)
 # percentage, accept image if smaller than threshold by this percentage:
 SIZE_TOLERANCE = 5.0
 # ratio must be in this interval:
@@ -54,9 +54,19 @@ def get_image_list(url):
         if tag['href'].lower().endswith('jpg'):
             if tag['href'] not in images:
                 images.append(tag['href'])  # no duplicates and keep the order
-                
+     
     return images
 # get_image_list
+
+def get_flickr_list(url):
+    flickr = []
+    soup = BeautifulSoup(urllib2.urlopen(url).read())
+    for tag in soup.findAll('a', href=True):
+        if tag['href'].lower().endswith('photostream/'):
+            if tag['href'] not in flickr:
+                flickr.append(tag['href'])
+
+    return flickr
 
 def file_name(url):
     """Return the file name from an URL.
@@ -76,6 +86,8 @@ def is_ok_for_wallpaper(image):
     landscape = width > height
     ratio = float(width) / float(height)
     ratio_ok = (RATIO_INTERVAL[0] <= ratio <= RATIO_INTERVAL[1])
+   
+    ok = large and landscape and ratio_ok
     
     return ( large and landscape and ratio_ok )
 # is_ok_for_wallpaper
@@ -101,6 +113,14 @@ def download_images(images):
             
     print "# new image(s): %d" % count
 # download_images
+
+def download_flickr_images(flickr):
+    count = 0
+    flickrImages = []
+    for url in flickr:
+        flickrImages+=get_image_list(url)
+   
+    return flickrImages
 
 def write_xml_output(images):
     """Produce an XML output. This XML must be set as background
@@ -140,6 +160,14 @@ def main():
     # get the URL of all images
     images = get_image_list(REDDIT_URL)
     
+    # get the URL of all flickr images
+    flickr = get_flickr_list(REDDIT_URL)
+
+    flickrImg = download_flickr_images(flickr)
+    
+    for img in flickrImg:
+        images.append(img)
+
     # download images
     download_images(images)
 
